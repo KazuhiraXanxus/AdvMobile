@@ -74,6 +74,7 @@ const loginUser = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
+      id: user._id.toString(), // Include user ID
       type: user.type, // Include type in the response
       firstName: user.firstName,
       lastName: user.lastName,

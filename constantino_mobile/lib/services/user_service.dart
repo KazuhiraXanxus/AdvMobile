@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
-import '../constants.dart';
+import '../utils/constants.dart';
 
 class UserService {
   static const String _baseUrl = host;
@@ -23,13 +23,20 @@ class UserService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final user = User.fromJson(data['user']);
-      final userWithToken = user.copyWith(token: data['token']);
-
+      
+      // Backend returns user data directly, not nested in 'user' field
+      final user = User(
+        id: data['id'] ?? '',
+        name: '${data['firstName']} ${data['lastName']}',
+        email: email, // Use the email from login
+        role: data['type'] ?? 'viewer',
+        token: data['token'],
+      );
+      
       // Save to SharedPreferences
-      await _saveUser(userWithToken);
+      await _saveUser(user);
 
-      return userWithToken;
+      return user;
     } else {
       throw Exception('Login failed: ${response.body}');
     }
