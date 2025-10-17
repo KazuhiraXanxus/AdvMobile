@@ -91,7 +91,7 @@ const toggleLike = async (req, res) => {
       article.likes = article.likedBy.length;
     }
 
-    await article.save();
+    await article.save({ validateBeforeSave: false });
     res.json({
       likes: article.likes,
       isLiked: article.likedBy.includes(userId),
@@ -121,7 +121,7 @@ const addComment = async (req, res) => {
     // Update comment count
     article.comments = article.commentsList.length;
 
-    await article.save();
+    await article.save({ validateBeforeSave: false });
     res.json({
       comments: article.comments,
       commentsList: article.commentsList,

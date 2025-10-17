@@ -353,12 +353,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: ElevatedButton.icon(
                                   onPressed: _showUpdateUsernameDialog,
-                                  icon: const Icon(Icons.person_outline, size: 20),
+                                  icon: const Icon(Icons.person_outline, size: 20, color: Colors.white),
                                   label: const Text(
                                     'Update Username',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      color: Colors.white,
                                     ),
                                   ),
                                   style: ElevatedButton.styleFrom(
@@ -395,12 +396,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: ElevatedButton.icon(
                                   onPressed: _showChangePasswordDialog,
-                                  icon: const Icon(Icons.lock_outline, size: 20),
+                                  icon: const Icon(Icons.lock_outline, size: 20, color: Colors.white),
                                   label: const Text(
                                     'Change Password',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      color: Colors.white,
                                     ),
                                   ),
                                   style: ElevatedButton.styleFrom(

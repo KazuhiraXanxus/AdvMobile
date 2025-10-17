@@ -20,11 +20,9 @@ const articleSchema = new mongoose.Schema({
   },
   userId: {
     type: String,
-    required: true,
   },
   username: {
     type: String,
-    required: true,
   },
   likes: {
     type: Number,

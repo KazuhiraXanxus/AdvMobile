@@ -158,7 +158,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with SingleTickerPr
                       .collection('messages')
                       .where('senderId', whereIn: [currentUserId, widget.receiverId])
                       .where('receiverId', whereIn: [currentUserId, widget.receiverId])
-                      .orderBy('timestamp', descending: false)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -198,12 +197,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with SingleTickerPr
                       );
                     }
 
+                    final sortedDocs = snapshot.data!.docs.toList()
+                      ..sort((a, b) {
+                        final aTimestamp = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp;
+                        final bTimestamp = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp;
+                        return aTimestamp.compareTo(bTimestamp);
+                      });
+
                     return ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: snapshot.data!.docs.length,
+                      itemCount: sortedDocs.length,
                       itemBuilder: (context, index) {
-                        final doc = snapshot.data!.docs[index];
+                        final doc = sortedDocs[index];
                         final messageData = doc.data() as Map<String, dynamic>;
                         final message = MessageModel.fromMap(messageData);
                         final isMe = message.senderId == currentUserId;
