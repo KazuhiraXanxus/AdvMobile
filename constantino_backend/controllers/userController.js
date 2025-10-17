@@ -78,6 +78,9 @@ const loginUser = async (req, res) => {
       type: user.type, // Include type in the response
       firstName: user.firstName,
       lastName: user.lastName,
+      age: user.age,
+      contactNumber: user.contactNumber,
+      address: user.address,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

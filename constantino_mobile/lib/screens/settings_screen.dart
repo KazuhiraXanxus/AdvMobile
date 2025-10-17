@@ -2,9 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/custom_text.dart';
+import '../services/user_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String _userName = 'Loading...';
+  String _userEmail = 'Loading...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await UserService.getSavedUser();
+    if (user != null) {
+      setState(() {
+        _userName = user.name;
+        _userEmail = user.email;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +55,12 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomText.heading2('John Doe'),
-                      CustomText.caption('john.doe@example.com'),
+                      CustomText.heading2(_userName),
+                      CustomText.caption(_userEmail),
                     ],
                   ),
                 ),
@@ -354,9 +379,18 @@ class SettingsScreen extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                // Call Firebase Auth logout
+                final userService = UserService();
+                await userService.signOut();
+                
+                // Close dialog
                 Navigator.pop(context);
-                Navigator.pop(context);
+                
+                // Navigate to login screen
+                Navigator.pushReplacementNamed(context, '/login');
+                
+                // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Logged out successfully!')),
                 );
