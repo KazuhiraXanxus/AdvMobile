@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -59,8 +59,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
           // Update display name with username
           if (userCredential.user != null) {
-            await userCredential.user!.updateDisplayName(
+            final user = userCredential.user!;
+            
+            await user.updateDisplayName(
               _usernameController.text.trim(),
+            );
+            
+            // Save additional user data to Firestore
+            await userService.saveUserDataToFirestore(
+              uid: user.uid,
+              firstName: _firstNameController.text.trim(),
+              lastName: _lastNameController.text.trim(),
+              age: _ageController.text.trim(),
+              gender: _selectedGender,
+              contactNumber: _contactNumberController.text.trim(),
+              email: _emailController.text.trim(),
+              username: _usernameController.text.trim(),
+              address: _addressController.text.trim(),
+              type: 'viewer',
             );
           }
         } else {
@@ -77,6 +93,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             address: _addressController.text.trim(),
             type: 'viewer',
           );
+          
+          // Automatically log in after MongoDB registration
+          await UserService.login(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
         }
 
         if (!mounted) return;
@@ -84,13 +106,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account created successfully! Please login.'),
+            content: Text('Account created successfully!'),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Navigate to login screen
-        Navigator.pop(context);
+        // Navigate to home screen (user is already logged in)
+        Navigator.pushReplacementNamed(context, '/home');
       } catch (e) {
         if (!mounted) return;
 

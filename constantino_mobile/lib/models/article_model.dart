@@ -1,6 +1,7 @@
 class Article {
-  final int id;
-  final int userId;
+  final String id;
+  final String userId;
+  final String username;
   final String title;
   final String body;
   final String? imageUrl;
@@ -8,10 +9,13 @@ class Article {
   final int likes;
   final int comments;
   final bool isLiked;
+  final List<String> likedBy;
+  final List<Map<String, dynamic>> commentsList;
 
   Article({
     required this.id,
     required this.userId,
+    required this.username,
     required this.title,
     required this.body,
     this.imageUrl,
@@ -19,22 +23,31 @@ class Article {
     this.likes = 0,
     this.comments = 0,
     this.isLiked = false,
+    this.likedBy = const [],
+    this.commentsList = const [],
   });
 
   // Factory constructor to create Article from JSON
   factory Article.fromJson(Map<String, dynamic> json) {
     return Article(
-      id: json['id'] ?? 0,
-      userId: json['userId'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '0',
+      username: json['username'] ?? 'Unknown User',
       title: json['title'] ?? '',
       body: json['body'] ?? '',
       imageUrl: json['imageUrl'],
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
-      likes: json['likes'] ?? _generateRandomLikes(),
-      comments: json['comments'] ?? _generateRandomComments(),
+      likes: json['likes'] ?? 0,
+      comments: json['comments'] ?? 0,
       isLiked: json['isLiked'] ?? false,
+      likedBy: json['likedBy'] != null 
+          ? List<String>.from(json['likedBy'])
+          : [],
+      commentsList: json['commentsList'] != null
+          ? List<Map<String, dynamic>>.from(json['commentsList'])
+          : [],
     );
   }
 
@@ -43,6 +56,7 @@ class Article {
     return {
       'id': id,
       'userId': userId,
+      'username': username,
       'title': title,
       'body': body,
       'imageUrl': imageUrl,
@@ -50,13 +64,16 @@ class Article {
       'likes': likes,
       'comments': comments,
       'isLiked': isLiked,
+      'likedBy': likedBy,
+      'commentsList': commentsList,
     };
   }
 
   // Create a copy of Article with updated fields
   Article copyWith({
-    int? id,
-    int? userId,
+    String? id,
+    String? userId,
+    String? username,
     String? title,
     String? body,
     String? imageUrl,
@@ -64,10 +81,13 @@ class Article {
     int? likes,
     int? comments,
     bool? isLiked,
+    List<String>? likedBy,
+    List<Map<String, dynamic>>? commentsList,
   }) {
     return Article(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      username: username ?? this.username,
       title: title ?? this.title,
       body: body ?? this.body,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -75,18 +95,11 @@ class Article {
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       isLiked: isLiked ?? this.isLiked,
+      likedBy: likedBy ?? this.likedBy,
+      commentsList: commentsList ?? this.commentsList,
     );
   }
 
-  // Generate random likes for demo purposes
-  static int _generateRandomLikes() {
-    return (DateTime.now().millisecondsSinceEpoch % 100) + 1;
-  }
-
-  // Generate random comments for demo purposes
-  static int _generateRandomComments() {
-    return (DateTime.now().millisecondsSinceEpoch % 20) + 1;
-  }
 
   // Get formatted time ago string
   String getTimeAgo() {

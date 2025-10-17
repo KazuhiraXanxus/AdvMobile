@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
@@ -129,24 +130,44 @@ class UserService {
     if (user == null) return null;
 
     if (user.loginType == LoginType.firebase) {
-      // Return Firebase user data
+      // Return Firebase user data from Firestore
       final userService = UserService();
       final firebaseUser = userService.currentUser;
       
       if (firebaseUser != null) {
-        return {
-          'id': firebaseUser.uid,
-          'name': firebaseUser.displayName ?? 'User',
-          'email': firebaseUser.email ?? '',
-          'role': 'user',
-          'loginType': 'firebase',
-          'firstName': 'N/A',
-          'lastName': 'N/A',
-          'age': 'N/A',
-          'contactNumber': 'N/A',
-          'address': 'N/A',
-          'type': 'user',
-        };
+        // Fetch data from Firestore
+        final firestoreData = await userService.getUserDataFromFirestore(firebaseUser.uid);
+        
+        if (firestoreData != null) {
+          return {
+            'id': firebaseUser.uid,
+            'name': firebaseUser.displayName ?? firestoreData['username'] ?? 'User',
+            'email': firebaseUser.email ?? '',
+            'role': 'user',
+            'loginType': 'firebase',
+            'firstName': firestoreData['firstName'] ?? 'N/A',
+            'lastName': firestoreData['lastName'] ?? 'N/A',
+            'age': firestoreData['age'] ?? 'N/A',
+            'contactNumber': firestoreData['contactNumber'] ?? 'N/A',
+            'address': firestoreData['address'] ?? 'N/A',
+            'type': firestoreData['type'] ?? 'user',
+          };
+        } else {
+          // Fallback if Firestore data not found
+          return {
+            'id': firebaseUser.uid,
+            'name': firebaseUser.displayName ?? 'User',
+            'email': firebaseUser.email ?? '',
+            'role': 'user',
+            'loginType': 'firebase',
+            'firstName': 'N/A',
+            'lastName': 'N/A',
+            'age': 'N/A',
+            'contactNumber': 'N/A',
+            'address': 'N/A',
+            'type': 'user',
+          };
+        }
       }
     } else {
       // Return MongoDB user data
@@ -276,6 +297,44 @@ class UserService {
   // Send password reset email
   Future<void> sendPasswordResetEmail({required String email}) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  // Save user data to Firestore
+  Future<void> saveUserDataToFirestore({
+    required String uid,
+    required String firstName,
+    required String lastName,
+    required String age,
+    required String gender,
+    required String contactNumber,
+    required String email,
+    required String username,
+    required String address,
+    required String type,
+  }) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'uid': uid,
+      'firstName': firstName,
+      'lastName': lastName,
+      'age': age,
+      'gender': gender,
+      'contactNumber': contactNumber,
+      'email': email,
+      'username': username,
+      'address': address,
+      'type': type,
+      'name': username, // For chat screen
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Get user data from Firestore
+  Future<Map<String, dynamic>?> getUserDataFromFirestore(String uid) async {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (doc.exists) {
+      return doc.data();
+    }
+    return null;
   }
 }
 

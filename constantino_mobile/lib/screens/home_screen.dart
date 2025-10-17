@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../services/article_service.dart';
+import '../services/user_service.dart';
 import '../widgets/custom_text.dart';
 import 'article_screen.dart';
-import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,9 +29,22 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       setState(() => _isLoading = true);
       final articles = await ArticleService.fetchArticles();
+      
+      // Check if current user has liked each article
+      final userData = await UserService.getUserData();
+      final currentUserId = userData?['id'];
+      
+      final articlesWithLikes = articles.map((article) {
+        if (currentUserId != null) {
+          final isLiked = article.likedBy.contains(currentUserId);
+          return article.copyWith(isLiked: isLiked);
+        }
+        return article;
+      }).toList();
+      
       setState(() {
-        _articles = articles;
-        _filteredArticles = articles;
+        _articles = articlesWithLikes;
+        _filteredArticles = articlesWithLikes;
         _isLoading = false;
       });
     } catch (e) {
@@ -61,15 +74,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleLike(Article article) async {
     try {
-      final updatedArticle = await ArticleService.toggleLike(article);
+      final userData = await UserService.getUserData();
+      if (userData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to like articles')),
+        );
+        return;
+      }
+
+      final currentUserId = userData['id'];
+      final result = await ArticleService.toggleLike(article.id, currentUserId);
+      
       setState(() {
         final index = _articles.indexWhere((a) => a.id == article.id);
         if (index != -1) {
-          _articles[index] = updatedArticle;
+          _articles[index] = article.copyWith(
+            likes: result['likes'],
+            isLiked: result['isLiked'],
+          );
         }
         final filteredIndex = _filteredArticles.indexWhere((a) => a.id == article.id);
         if (filteredIndex != -1) {
-          _filteredArticles[filteredIndex] = updatedArticle;
+          _filteredArticles[filteredIndex] = article.copyWith(
+            likes: result['likes'],
+            isLiked: result['isLiked'],
+          );
         }
       });
     } catch (e) {
@@ -79,11 +108,115 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _showAddArticleDialog() {
+    final nameController = TextEditingController();
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    final imageUrlController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Article'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name (Unique)',
+                  hintText: 'Enter unique article name',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter article title',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: bodyController,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  hintText: 'Enter article content',
+                ),
+                maxLines: 5,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: imageUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'Image URL (Optional)',
+                  hintText: 'https://example.com/image.jpg',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty || 
+                  titleController.text.trim().isEmpty || 
+                  bodyController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill in all fields')),
+                );
+                return;
+              }
+
+              try {
+                // Get current user info
+                final userData = await UserService.getUserData();
+                final userId = userData?['id'] ?? 'unknown';
+                final username = userData?['name'] ?? 'Unknown User';
+
+                await ArticleService.createArticle({
+                  'name': nameController.text.trim(),
+                  'title': titleController.text.trim(),
+                  'content': [bodyController.text.trim()],
+                  'userId': userId,
+                  'username': username,
+                  if (imageUrlController.text.trim().isNotEmpty)
+                    'imageUrl': imageUrlController.text.trim(),
+                });
+                
+                if (!mounted) return;
+                Navigator.pop(context);
+                _loadArticles();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Article created successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error creating article: $e')),
+                );
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const CustomText.heading2('Facebook'),
+        title: const CustomText.heading2('Articles'),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -91,18 +224,12 @@ class _HomeScreenState extends State<HomeScreen> {
               // Toggle search bar visibility
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddArticleDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Article'),
       ),
       body: Column(
         children: [
@@ -154,9 +281,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             return _ArticleCard(
                               article: _filteredArticles[index],
                               onLike: () => _toggleLike(_filteredArticles[index]),
-                              onTap: () {
+                              onTap: () async {
                                 // Enhancement 2: Navigate to details page
-                                Navigator.push(
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ArticleScreen(
@@ -164,6 +291,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 );
+                                // If article was deleted, refresh the list
+                                if (result == true) {
+                                  _loadArticles();
+                                }
                               },
                             );
                           },
@@ -209,9 +340,14 @@ class _ArticleCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 20,
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: CustomText.body(
-                      'U${article.userId}',
-                      color: Colors.white,
+                    child: Text(
+                      article.username.isNotEmpty
+                          ? article.username[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -219,7 +355,7 @@ class _ArticleCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CustomText.heading2('User ${article.userId}'),
+                        CustomText.heading2(article.username),
                         CustomText.caption(article.getTimeAgo()),
                       ],
                     ),
@@ -302,11 +438,6 @@ class _ArticleCard extends StatelessWidget {
                   _ActionButton(
                     icon: Icons.comment_outlined,
                     label: 'Comment',
-                    onPressed: () {},
-                  ),
-                  _ActionButton(
-                    icon: Icons.share_outlined,
-                    label: 'Share',
                     onPressed: () {},
                   ),
                 ],

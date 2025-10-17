@@ -1,22 +1,10 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:http/http.dart' as http;
 import '../models/article_model.dart';
 import '../utils/constants.dart';
 
 class ArticleService {
   static const String _baseUrl = host;
-  
-  static final List<String> _sampleImages = [
-    'https://picsum.photos/600/400?random=1',
-    'https://picsum.photos/600/400?random=2',
-    'https://picsum.photos/600/400?random=3',
-    'https://picsum.photos/600/400?random=4',
-    'https://picsum.photos/600/400?random=5',
-    'https://picsum.photos/600/400?random=6',
-    'https://picsum.photos/600/400?random=7',
-    'https://picsum.photos/600/400?random=8',
-  ];
 
   static Future<List<Article>> fetchArticles() async {
     try {
@@ -30,13 +18,23 @@ class ArticleService {
         final List<dynamic> articlesList = jsonData['articles'] ?? [];
         
         return articlesList.map((json) {
+          final articleData = Map<String, dynamic>.from(json);
+          
           final enhancedJson = <String, dynamic>{
-            ...Map<String, dynamic>.from(json),
-            'imageUrl': _getRandomImage(),
-            'createdAt': _getRandomDateTime().toIso8601String(),
-            'likes': _getRandomLikes(),
-            'comments': _getRandomComments(),
+            'id': articleData['_id']?.toString() ?? articleData['id']?.toString() ?? '',
+            'body': articleData['content'] is List 
+                ? (articleData['content'] as List).join('\n\n')
+                : articleData['content'] ?? '',
+            'title': articleData['title'] ?? '',
+            'imageUrl': articleData['imageUrl'], // Use actual imageUrl from backend
+            'userId': articleData['userId']?.toString() ?? '0',
+            'username': articleData['username'] ?? 'Unknown User',
+            'createdAt': articleData['createdAt'] ?? DateTime.now().toIso8601String(),
+            'likes': articleData['likes'] ?? 0,
+            'comments': articleData['comments'] ?? 0,
             'isLiked': false,
+            'likedBy': articleData['likedBy'] ?? [],
+            'commentsList': articleData['commentsList'] ?? [],
           };
           
           return Article.fromJson(enhancedJson);
@@ -49,7 +47,7 @@ class ArticleService {
     }
   }
 
-  static Future<Article> fetchArticleById(int id) async {
+  static Future<Article> fetchArticleById(String id) async {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/articles/$id'),
@@ -61,14 +59,22 @@ class ArticleService {
             Map<String, dynamic>.from(json.decode(response.body));
         
         final enhancedJson = <String, dynamic>{
-          ...jsonData,
-          'imageUrl': _getRandomImage(),
-          'createdAt': _getRandomDateTime().toIso8601String(),
-          'likes': _getRandomLikes(),
-          'comments': _getRandomComments(),
+          'id': jsonData['_id']?.toString() ?? jsonData['id']?.toString() ?? '',
+          'body': jsonData['content'] is List 
+              ? (jsonData['content'] as List).join('\n\n')
+              : jsonData['content'] ?? '',
+          'title': jsonData['title'] ?? '',
+          'imageUrl': jsonData['imageUrl'], // Use actual imageUrl from backend
+          'userId': jsonData['userId']?.toString() ?? '0',
+          'username': jsonData['username'] ?? 'Unknown User',
+          'createdAt': jsonData['createdAt'] ?? DateTime.now().toIso8601String(),
+          'likes': jsonData['likes'] ?? 0,
+          'comments': jsonData['comments'] ?? 0,
           'isLiked': false,
+          'likedBy': jsonData['likedBy'] ?? [],
+          'commentsList': jsonData['commentsList'] ?? [],
         };
-        
+
         return Article.fromJson(enhancedJson);
       } else {
         throw Exception('Failed to load article: ${response.statusCode}');
@@ -93,43 +99,6 @@ class ArticleService {
     } catch (e) {
       throw Exception('Error searching articles: $e');
     }
-  }
-
-  static Future<Article> toggleLike(Article article) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    return article.copyWith(
-      isLiked: !article.isLiked,
-      likes: article.isLiked 
-          ? article.likes - 1 
-          : article.likes + 1,
-    );
-  }
-
-  static String? _getRandomImage() {
-    final random = Random();
-    if (random.nextDouble() < 0.5) {
-      return _sampleImages[random.nextInt(_sampleImages.length)];
-    }
-    return null;
-  }
-
-  static int _getRandomLikes() {
-    final random = Random();
-    return random.nextInt(100) + 1;
-  }
-
-  static int _getRandomComments() {
-    final random = Random();
-    return random.nextInt(20) + 1;
-  }
-
-  static DateTime _getRandomDateTime() {
-    final random = Random();
-    final now = DateTime.now();
-    final hoursAgo = random.nextInt(48);
-    
-    return now.subtract(Duration(hours: hoursAgo));
   }
 
   static Future<Map> createArticle(dynamic article) async {
@@ -168,6 +137,87 @@ class ArticleService {
     } else {
       throw Exception(
         'Failed to update article: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  static Future<void> deleteArticle(String id) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/api/articles/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception(
+        'Failed to delete article: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> toggleLike(String articleId, String userId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/articles/$articleId/like'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'userId': userId}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        'Failed to toggle like: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> addComment(
+    String articleId,
+    String userId,
+    String username,
+    String comment,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/articles/$articleId/comment'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'userId': userId,
+        'username': username,
+        'comment': comment,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        'Failed to add comment: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>> getComments(String articleId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/articles/$articleId/comments'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        'Failed to get comments: ${response.statusCode} ${response.body}',
       );
     }
   }
