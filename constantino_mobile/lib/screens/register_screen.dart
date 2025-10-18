@@ -226,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: !_isFirebaseSignup 
-                                  ? Theme.of(context).colorScheme.primary 
+                                  ? const Color(0xFF10AA50) // MongoDB Green
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -235,7 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: !_isFirebaseSignup 
-                                    ? Theme.of(context).colorScheme.onPrimary 
+                                    ? Colors.white
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -254,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _isFirebaseSignup 
-                                  ? Theme.of(context).colorScheme.primary 
+                                  ? const Color(0xFFFF6F00) // Firebase Orange
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -263,7 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _isFirebaseSignup 
-                                    ? Theme.of(context).colorScheme.onPrimary 
+                                    ? Colors.white
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -525,6 +525,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _signUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isFirebaseSignup 
+                          ? const Color(0xFFFF6F00) // Firebase Orange
+                          : const Color(0xFF10AA50), // MongoDB Green
+                      foregroundColor: Colors.white,
+                    ),
                     child: _isLoading
                         ? const SizedBox(
                             height: 24,

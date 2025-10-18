@@ -52,6 +52,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+            tooltip: 'Settings',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadUserData,
             tooltip: 'Refresh',
@@ -165,13 +172,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: _userData!['loginType'] == 'mongodb' 
-                                        ? Colors.green.withOpacity(0.3)
-                                        : Colors.blue.withOpacity(0.3),
+                                        ? const Color(0xFF10AA50).withOpacity(0.3) // MongoDB Green
+                                        : const Color(0xFFFF6F00).withOpacity(0.3), // Firebase Orange
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _userData!['loginType'] == 'mongodb' 
-                                          ? Colors.green
-                                          : Colors.blue,
+                                          ? const Color(0xFF10AA50) // MongoDB Green
+                                          : const Color(0xFFFF6F00), // Firebase Orange
                                       width: 1,
                                     ),
                                   ),

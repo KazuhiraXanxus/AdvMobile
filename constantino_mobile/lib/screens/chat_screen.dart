@@ -26,6 +26,62 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final currentUserId = _auth.currentUser?.uid;
 
+    // Check if user is logged in with Firebase
+    if (currentUserId == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Messages'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Chat Feature',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'The chat feature is currently only available for Firebase users. Please log in with Firebase to use this feature.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Navigate to settings or logout
+                    Navigator.pushNamed(context, '/settings');
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Go to Settings'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
@@ -161,7 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     final receiverEmail = userData['email'] ?? '';
 
                     return FutureBuilder<DocumentSnapshot?>(
-                      future: _getLastMessage(currentUserId!, receiverId),
+                      future: _getLastMessage(currentUserId, receiverId),
                       builder: (context, messageSnapshot) {
                         String lastMessage = '';
                         String lastMessageTime = '';

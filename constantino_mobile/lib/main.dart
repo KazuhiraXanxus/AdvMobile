@@ -8,6 +8,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/update_user_data_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,6 +107,7 @@ class MyApp extends StatelessWidget {
               '/signup': (context) => const RegisterScreen(),
               '/home': (context) => const MainScreen(),
               '/update-user-data': (context) => const UpdateUserDataScreen(),
+              '/settings': (context) => const SettingsScreen(),
             },
             debugShowCheckedModeBanner: false,
           );
